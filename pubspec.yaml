@@ -37,7 +37,7 @@ dependencies:
   
   # Kamera ve görsel işleme paketleri
   image_picker: ^1.0.4
-  # Mobil için OCR paketi - daha yeni versiyon
+  # OCR paketi
   google_mlkit_text_recognition: ^0.15.0
 
 dev_dependencies:
