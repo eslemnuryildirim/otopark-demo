@@ -1,0 +1,500 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:otopark_demo/core/utils/ocr_helper.dart';
+import 'package:otopark_demo/features/park_slots/domain/park_slot.dart';
+import 'package:otopark_demo/features/park_slots/providers/slot_providers.dart';
+import 'package:otopark_demo/features/vehicles/domain/vehicle.dart';
+import 'package:otopark_demo/features/vehicles/domain/vehicle_status.dart';
+import 'package:otopark_demo/features/vehicles/providers/vehicle_providers.dart';
+
+/// Kroki Page - Riverpod entegrasyonlu
+class KrokiPageNew extends ConsumerWidget {
+  const KrokiPageNew({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final slotsAsync = ref.watch(slotsProvider);
+    final vehiclesAsync = ref.watch(vehiclesProvider);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Otopark Krokisi'),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Colors.white,
+      ),
+      body: slotsAsync.when(
+        data: (slots) {
+          return vehiclesAsync.when(
+            data: (vehicles) => _buildParkingMap(context, ref, slots, vehicles),
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (err, stack) => Center(child: Text('Araçlar yüklenirken hata: $err')),
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (err, stack) => Center(child: Text('Slotlar yüklenirken hata: $err')),
+      ),
+    );
+  }
+
+  Widget _buildParkingMap(BuildContext context, WidgetRef ref, List<ParkSlot> slots, List<Vehicle> vehicles) {
+    // Layout yapısı - Eski kroki gibi
+    final layout = [
+      // Servis alanları
+      ['YIK1', 'YIK2', 'CAM1', 'DET1', 'PAS1', 'PAS2'],
+      [], // Boş satır (koridor)
+      // Ana park alanları - 13'er araç
+      ['A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A8', 'A9', 'A10', 'A11', 'A12', 'A13'],
+      [], // Koridor
+      ['B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8', 'B9', 'B10', 'B11', 'B12', 'B13'],
+      ['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'C10', 'C11', 'C12', 'C13'],
+      [], // Koridor
+      ['D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7', 'D8', 'D9', 'D10', 'D11', 'D12', 'D13'],
+      ['E1', 'E2', 'E3', 'E4', 'E5', 'E6', 'E7', 'E8', 'E9', 'E10', 'E11', 'E12', 'E13'],
+      [], // Koridor
+      ['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12', 'F13'],
+    ];
+
+    // Slot map oluştur (ID -> ParkSlot)
+    final slotMap = {for (var slot in slots) slot.id: slot};
+
+    return Column(
+      children: [
+        // İstatistikler
+        _buildStats(slots),
+        const SizedBox(height: 16),
+        
+        // Grid layout
+        Expanded(
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.vertical,
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: layout.map((row) {
+                  if (row.isEmpty) {
+                    // Koridor (boş alan)
+                    return const SizedBox(height: 20);
+                  }
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      children: row.map((slotId) {
+                        final slot = slotMap[slotId];
+                        if (slot == null) return const SizedBox(width: 60);
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: _buildSlotCard(context, ref, slot, vehicles),
+                        );
+                      }).toList(),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStats(List<ParkSlot> slots) {
+    final totalSlots = slots.where((s) => !s.isServiceArea).length;
+    final occupiedSlots = slots.where((s) => !s.isServiceArea && s.isOccupied).length;
+    final availableSlots = totalSlots - occupiedSlots;
+
+    final totalService = slots.where((s) => s.isServiceArea).length;
+    final occupiedService = slots.where((s) => s.isServiceArea && s.isOccupied).length;
+    final availableService = totalService - occupiedService;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _buildStatItem('Toplam Park', totalSlots, Colors.blue),
+            _buildStatItem('Dolu', occupiedSlots, Colors.red),
+            _buildStatItem('Boş', availableSlots, Colors.green),
+            const VerticalDivider(),
+            _buildStatItem('Servis Dolu', occupiedService, Colors.orange),
+            _buildStatItem('Servis Boş', availableService, Colors.lightBlue),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatItem(String label, int value, Color color) {
+    return Column(
+      children: [
+        Text(
+          '$value',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 12),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSlotCard(BuildContext context, WidgetRef ref, ParkSlot slot, List<Vehicle> vehicles) {
+    Color cardColor;
+    Color textColor;
+
+    if (slot.isOccupied) {
+      if (slot.isServiceArea) {
+        cardColor = Colors.orange;
+        textColor = Colors.white;
+      } else {
+        cardColor = Colors.red;
+        textColor = Colors.white;
+      }
+    } else {
+      if (slot.isServiceArea) {
+        cardColor = Colors.blue;
+        textColor = Colors.white;
+      } else {
+        cardColor = Colors.green;
+        textColor = Colors.white;
+      }
+    }
+
+    return GestureDetector(
+      onTap: () => _handleSlotTap(context, ref, slot, vehicles),
+      child: Container(
+        width: 60,
+        height: 50,
+        decoration: BoxDecoration(
+          color: cardColor,
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(color: Colors.black26, width: 1),
+        ),
+        child: Center(
+          child: Text(
+            slot.label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: textColor,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _handleSlotTap(BuildContext context, WidgetRef ref, ParkSlot slot, List<Vehicle> vehicles) {
+    if (slot.isOccupied) {
+      // Slot doluysa → Aracı çıkar
+      _showOccupiedSlotDialog(context, ref, slot, vehicles);
+    } else {
+      // Slot boşsa → Araç ata
+      _showAssignVehicleDialog(context, ref, slot, vehicles);
+    }
+  }
+
+  void _showOccupiedSlotDialog(BuildContext context, WidgetRef ref, ParkSlot slot, List<Vehicle> vehicles) {
+    final vehicle = vehicles.where((v) => v.id == slot.vehicleId).firstOrNull;
+
+    if (vehicle == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Araç bulunamadı!')),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('${slot.label} - ${vehicle.plate}'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Marka: ${vehicle.brand ?? '-'}'),
+            Text('Model: ${vehicle.model ?? '-'}'),
+            Text('Durum: ${vehicle.status.displayName}'),
+            if (vehicle.parkStartAt != null)
+              Text('Park Süresi: ${DateTime.now().difference(vehicle.parkStartAt!).inMinutes} dk'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Kapat'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              // Slotu boşalt
+              await ref.read(slotsProvider.notifier).vacateSlot(slot.id);
+              if (context.mounted) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('${vehicle.plate} ${slot.label} alanından çıkarıldı.')),
+                );
+              }
+            },
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Aracı Çıkar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAssignVehicleDialog(BuildContext context, WidgetRef ref, ParkSlot slot, List<Vehicle> vehicles) {
+    // Atanabilir araçlar (park edilmemiş veya başka slotta olmayan)
+    final availableVehicles = vehicles.where((v) => v.currentParkSlotId == null).toList();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('${slot.label} - Araç Seç veya Ekle'),
+        content: SizedBox(
+          width: double.maxFinite,
+          height: 400,
+          child: Column(
+            children: [
+              // Yeni araç ekle butonu
+              ListTile(
+                leading: const Icon(Icons.add_circle, color: Colors.green, size: 32),
+                title: const Text('Yeni Araç Ekle', style: TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: const Text('Yeni bir araç kaydı oluştur'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showAddVehicleDialog(context, ref, slot);
+                },
+              ),
+              const Divider(),
+              
+              // Mevcut araçlar
+              if (availableVehicles.isEmpty)
+                const Expanded(
+                  child: Center(
+                    child: Text('Atanabilecek başka araç yok.\nYeni araç ekleyebilirsiniz.'),
+                  ),
+                )
+              else
+                Expanded(
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: availableVehicles.length,
+                    itemBuilder: (context, index) {
+                      final vehicle = availableVehicles[index];
+                      return ListTile(
+                        leading: Icon(vehicle.status.icon, color: vehicle.status.color),
+                        title: Text(vehicle.plate),
+                        subtitle: Text('${vehicle.brand ?? ''} ${vehicle.model ?? ''}'),
+                        onTap: () async {
+                          // Aracı slota ata
+                          await ref.read(slotsProvider.notifier).occupySlot(slot.id, vehicle.id);
+                          
+                          // Aracı güncelle
+                          final updatedVehicle = vehicle.copyWith(
+                            currentParkSlotId: slot.id,
+                            parkStartAt: DateTime.now(),
+                          );
+                          await ref.read(vehiclesProvider.notifier).updateVehicle(updatedVehicle);
+                          
+                          if (context.mounted) {
+                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('${vehicle.plate} ${slot.label} alanına atandı.')),
+                            );
+                          }
+                        },
+                      );
+                    },
+                  ),
+                ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('İptal'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAddVehicleDialog(BuildContext context, WidgetRef ref, ParkSlot slot) {
+    final plateController = TextEditingController();
+    final brandController = TextEditingController();
+    final modelController = TextEditingController();
+    final colorController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('${slot.label} - Yeni Araç Ekle'),
+        content: Form(
+          key: formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: plateController,
+                  decoration: InputDecoration(
+                    labelText: 'Şase *',
+                    hintText: 'ABC123456789',
+                    suffixIcon: IconButton(
+                      icon: const Icon(Icons.camera_alt),
+                      onPressed: () async {
+                        final scanned = await _scanChassisNumber(context);
+                        if (scanned != null) {
+                          plateController.text = scanned;
+                        }
+                      },
+                      tooltip: 'Şase Tara (OCR)',
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Şase gerekli';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: brandController,
+                  decoration: const InputDecoration(labelText: 'Marka'),
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: modelController,
+                  decoration: const InputDecoration(labelText: 'Model'),
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: colorController,
+                  decoration: const InputDecoration(labelText: 'Renk'),
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('İptal'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              if (formKey.currentState?.validate() ?? false) {
+                final uuid = ref.read(uuidProvider);
+                final newVehicle = Vehicle(
+                  id: uuid.v4(),
+                  plate: plateController.text.trim(),
+                  brand: brandController.text.trim().isEmpty ? null : brandController.text.trim(),
+                  model: modelController.text.trim().isEmpty ? null : modelController.text.trim(),
+                  color: colorController.text.trim().isEmpty ? null : colorController.text.trim(),
+                  status: VehicleStatus.parked,
+                  currentParkSlotId: slot.id,
+                  parkStartAt: DateTime.now(),
+                  createdAt: DateTime.now(),
+                  updatedAt: DateTime.now(),
+                );
+
+                await ref.read(vehiclesProvider.notifier).addVehicle(newVehicle);
+                await ref.read(slotsProvider.notifier).occupySlot(slot.id, newVehicle.id);
+                
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('${newVehicle.plate} eklendi ve ${slot.label} alanına atandı!')),
+                  );
+                }
+              }
+            },
+            child: const Text('Kaydet ve Ata'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<String?> _scanChassisNumber(BuildContext context) async {
+    final ImagePicker picker = ImagePicker();
+    
+    // Kamera ile fotoğraf çek
+    final XFile? image = await picker.pickImage(
+      source: ImageSource.camera,
+      imageQuality: 80,
+    );
+    
+    if (image == null) return null;
+    
+    try {
+      // Gelişmiş OCR ile metni tanı (görüntü iyileştirme + Tesseract)
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Şase okunuyor...')),
+        );
+      }
+      
+      final lines = await OcrHelper.extractTextFromImage(image.path);
+      
+      if (lines.isEmpty) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Şase numarası okunamadı. Fotoğrafı daha net çekin.')),
+          );
+        }
+        return null;
+      }
+      
+      // Kullanıcıya okunan metinleri göster
+      if (context.mounted) {
+        return showDialog<String>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Şase Seçin'),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: lines.length,
+                itemBuilder: (context, index) {
+                  return ListTile(
+                    title: Text(lines[index]),
+                    onTap: () => Navigator.pop(context, lines[index]),
+                  );
+                },
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('İptal'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Hata: $e')),
+        );
+      }
+    }
+    
+    return null;
+  }
+}
+

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1033652290031",
+    "project_id": "buharisatisotopark",
+    "storage_bucket": "buharisatisotopark.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1033652290031:android:e325c45ad693f87c6f361a",
+        "android_client_info": {
+          "package_name": "com.example.otopark_demo"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCD2hSnQOWi7goz0BXZkqoeGw0uFJaYx8k"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
