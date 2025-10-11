@@ -109,9 +109,12 @@ class _VehiclesPageState extends ConsumerState<VehiclesPage> {
         leading: Icon(vehicle.status.icon, color: vehicle.status.color, size: 32),
         title: Row(
           children: [
-            Text(
-              vehicle.plate,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            Expanded(
+              child: Text(
+                vehicle.plate,
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
             const SizedBox(width: 8),
             // Park süresi göstergesi

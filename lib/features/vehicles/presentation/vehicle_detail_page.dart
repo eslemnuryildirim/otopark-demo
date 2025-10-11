@@ -250,8 +250,10 @@ class VehicleDetailPage extends ConsumerWidget {
     
     await slotsAsync.when(
       data: (slots) async {
-        // Boş slotları filtrele
-        final availableSlots = slots.where((s) => !s.isOccupied).toList();
+        // Boş slotları filtrele VEYA aracın mevcut park yerini dahil et
+        final availableSlots = slots.where((s) => 
+          !s.isOccupied || s.id == vehicle.currentParkSlotId
+        ).toList();
 
         if (availableSlots.isEmpty) {
           if (context.mounted) {
@@ -281,7 +283,24 @@ class VehicleDetailPage extends ConsumerWidget {
                       ),
                       title: Text(slot.label),
                       subtitle: Text(slot.isServiceArea ? 'Servis Alanı' : 'Park Alanı'),
+                      trailing: slot.id == vehicle.currentParkSlotId
+                          ? const Icon(Icons.check_circle, color: Colors.green)
+                          : null,
                       onTap: () async {
+                        // Eğer aynı slot seçildiyse işlem yapma
+                        if (slot.id == vehicle.currentParkSlotId) {
+                          if (context.mounted) {
+                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('${vehicle.plate} zaten ${slot.label} alanında.'),
+                                backgroundColor: Colors.orange,
+                              ),
+                            );
+                          }
+                          return;
+                        }
+
                         // Slotu doldur
                         await ref.read(slotsProvider.notifier).occupySlot(slot.id, vehicle.id);
 
