@@ -378,10 +378,7 @@ class KrokiPageNew extends ConsumerWidget {
     String actionMessage,
   ) async {
     try {
-      // Slotu boşalt
-      await ref.read(slotsProvider.notifier).vacateSlot(currentSlot.id);
-
-      // Araç durumunu değiştir
+      // ÖNCE araç durumunu değiştir (bu işlem slotu otomatik boşaltır ve vehicle'ı günceller)
       final error = await ref.read(vehiclesProvider.notifier).changeVehicleStatus(
         vehicle: vehicle,
         newStatus: newStatus,
