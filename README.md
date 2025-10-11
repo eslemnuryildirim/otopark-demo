@@ -577,21 +577,6 @@ flutter run --uninstall-first
 
 ---
 
-## 📞 İletişim
-
-### **Geliştirici**
-- 👤 **İsim:** [Senin Adın]
-- 📧 **Email:** [senin@email.com]
-- 💼 **LinkedIn:** [linkedin.com/in/...]
-- 🐙 **GitHub:** [github.com/...]
-
-### **Proje**
-- 📦 **Repository:** [github.com/yourname/otopark-demo]
-- 🐛 **Issues:** [github.com/yourname/otopark-demo/issues]
-- 📚 **Wiki:** [github.com/yourname/otopark-demo/wiki]
-
----
-
 
 ---
 
