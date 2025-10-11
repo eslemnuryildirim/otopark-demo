@@ -234,20 +234,274 @@ class KrokiPageNew extends ConsumerWidget {
           ),
           FilledButton(
             onPressed: () async {
-              // Slotu boşalt
-              await ref.read(slotsProvider.notifier).vacateSlot(slot.id);
-              if (context.mounted) {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('${vehicle.plate} ${slot.label} alanından çıkarıldı.')),
-                );
-              }
+              // Önce mevcut dialog'u kapat
+              Navigator.pop(context);
+              
+              // Sonra yeni durum seçme dialog'unu aç
+              _showVehicleActionDialog(context, ref, vehicle, slot, vehicles);
             },
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
             child: const Text('Aracı Çıkar'),
           ),
         ],
       ),
+    );
+  }
+
+  /// Araç çıkarıldıktan sonra yeni durum seçme dialog'u
+  void _showVehicleActionDialog(BuildContext context, WidgetRef ref, Vehicle vehicle, ParkSlot currentSlot, List<Vehicle> vehicles) {
+    showDialog(
+      context: context,
+      barrierDismissible: false, // Dışarı tıklayınca kapanmasın
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.info_outline, color: Theme.of(context).colorScheme.primary),
+            const SizedBox(width: 8),
+            const Expanded(child: Text('Araç Nereye Gidiyor?')),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '${vehicle.plate} aracını ${currentSlot.label} alanından çıkardınız.',
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Lütfen aracın yeni durumunu seçin:',
+              style: TextStyle(color: Colors.grey),
+            ),
+          ],
+        ),
+        actions: [
+          // Başka bir yere park et
+          ListTile(
+            leading: const Icon(Icons.local_parking_rounded, color: Colors.blue),
+            title: const Text('Başka Bir Yere Park Et'),
+            subtitle: const Text('Farklı bir park yerine taşı'),
+            onTap: () async {
+              Navigator.pop(context);
+              _showSelectNewSlotDialog(context, ref, vehicle, currentSlot, vehicles);
+            },
+          ),
+          const Divider(),
+          
+          // Teslimat alanına al
+          ListTile(
+            leading: const Icon(Icons.local_shipping_rounded, color: Colors.purple),
+            title: const Text('Teslimat Alanına Al'),
+            subtitle: const Text('Teslim için hazırla'),
+            onTap: () async {
+              Navigator.pop(context);
+              await _changeVehicleStatusAndVacate(
+                context,
+                ref,
+                vehicle,
+                currentSlot,
+                VehicleStatus.inDeliveryQueue,
+                'Teslimat alanına alındı',
+              );
+            },
+          ),
+          const Divider(),
+          
+          // Yıkamaya götür
+          ListTile(
+            leading: const Icon(Icons.local_car_wash_rounded, color: Colors.lightBlue),
+            title: const Text('Yıkamaya Götür'),
+            subtitle: const Text('Araç yıkamaya gönderildi'),
+            onTap: () async {
+              Navigator.pop(context);
+              await _changeVehicleStatusAndVacate(
+                context,
+                ref,
+                vehicle,
+                currentSlot,
+                VehicleStatus.inWash,
+                'Yıkamaya gönderildi',
+              );
+            },
+          ),
+          const Divider(),
+          
+          // Bakıma götür
+          ListTile(
+            leading: const Icon(Icons.build_circle_rounded, color: Colors.orange),
+            title: const Text('Bakıma Götür'),
+            subtitle: const Text('Bakım için gönderildi'),
+            onTap: () async {
+              Navigator.pop(context);
+              await _changeVehicleStatusAndVacate(
+                context,
+                ref,
+                vehicle,
+                currentSlot,
+                VehicleStatus.inMaintenance,
+                'Bakıma gönderildi',
+              );
+            },
+          ),
+          const Divider(),
+          
+          // Çıkış yap
+          ListTile(
+            leading: const Icon(Icons.exit_to_app_rounded, color: Colors.grey),
+            title: const Text('Çıkış Yap'),
+            subtitle: const Text('Araç otoparktan ayrıldı'),
+            onTap: () async {
+              Navigator.pop(context);
+              await _changeVehicleStatusAndVacate(
+                context,
+                ref,
+                vehicle,
+                currentSlot,
+                VehicleStatus.exited,
+                'Otoparktan çıkış yaptı',
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Araç durumunu değiştir ve slotu boşalt
+  Future<void> _changeVehicleStatusAndVacate(
+    BuildContext context,
+    WidgetRef ref,
+    Vehicle vehicle,
+    ParkSlot currentSlot,
+    VehicleStatus newStatus,
+    String actionMessage,
+  ) async {
+    try {
+      // Slotu boşalt
+      await ref.read(slotsProvider.notifier).vacateSlot(currentSlot.id);
+
+      // Araç durumunu değiştir
+      final error = await ref.read(vehiclesProvider.notifier).changeVehicleStatus(
+        vehicle: vehicle,
+        newStatus: newStatus,
+        note: actionMessage,
+      );
+
+      if (context.mounted) {
+        if (error != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Hata: $error'), backgroundColor: Colors.red),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('${vehicle.plate} - $actionMessage'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Hata: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  /// Başka bir park yerine taşıma dialog'u
+  void _showSelectNewSlotDialog(BuildContext context, WidgetRef ref, Vehicle vehicle, ParkSlot currentSlot, List<Vehicle> vehicles) async {
+    final slotsAsync = ref.read(slotsProvider);
+    
+    await slotsAsync.when(
+      data: (slots) async {
+        // Boş slotları filtrele (mevcut slot hariç)
+        final availableSlots = slots
+            .where((s) => !s.isOccupied && s.id != currentSlot.id)
+            .toList();
+
+        if (availableSlots.isEmpty) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Boş park yeri yok!')),
+            );
+          }
+          return;
+        }
+
+        if (context.mounted) {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: Text('${vehicle.plate} - Yeni Park Yeri Seç'),
+              content: SizedBox(
+                width: double.maxFinite,
+                height: 400,
+                child: ListView.builder(
+                  itemCount: availableSlots.length,
+                  itemBuilder: (context, index) {
+                    final slot = availableSlots[index];
+                    return ListTile(
+                      leading: Icon(
+                        slot.isServiceArea ? Icons.build_rounded : Icons.local_parking_rounded,
+                        color: slot.isServiceArea ? Colors.orange : Colors.blue,
+                      ),
+                      title: Text(slot.label),
+                      subtitle: Text(slot.isServiceArea ? 'Servis Alanı' : 'Park Alanı'),
+                      onTap: () async {
+                        // Mevcut slotu boşalt
+                        await ref.read(slotsProvider.notifier).vacateSlot(currentSlot.id);
+
+                        // Yeni slotu doldur
+                        await ref.read(slotsProvider.notifier).occupySlot(slot.id, vehicle.id);
+
+                        // Aracı güncelle
+                        final updatedVehicle = vehicle.copyWith(
+                          currentParkSlotId: slot.id,
+                          parkStartAt: DateTime.now(),
+                        );
+                        await ref.read(vehiclesProvider.notifier).updateVehicle(updatedVehicle);
+
+                        if (context.mounted) {
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('${vehicle.plate} ${currentSlot.label} → ${slot.label} taşındı.'),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                        }
+                      },
+                    );
+                  },
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('İptal'),
+                ),
+              ],
+            ),
+          );
+        }
+      },
+      loading: () {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Yükleniyor...')),
+          );
+        }
+      },
+      error: (err, stack) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Hata: $err')),
+          );
+        }
+      },
     );
   }
 

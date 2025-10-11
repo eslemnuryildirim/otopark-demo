@@ -13,7 +13,7 @@ import 'package:uuid/uuid.dart';
 final uuidProvider = Provider((ref) => const Uuid());
 
 final vehicleRepositoryProvider = Provider<VehicleRepository>((ref) {
-  final repository = HiveVehicleRepository();
+  final repository = HybridVehicleRepository();
   repository.init(); // init zaten main'de yapıldı, box açık
   return repository;
 });

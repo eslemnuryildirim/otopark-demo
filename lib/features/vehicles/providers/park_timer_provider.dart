@@ -5,7 +5,7 @@ import 'package:otopark_demo/features/vehicles/providers/vehicle_providers.dart'
 /// Gerçek zamanlı park süresi güncellemesi için timer provider
 final parkTimerProvider = StreamProvider.autoDispose<DateTime>((ref) {
   return Stream.periodic(
-    const Duration(seconds: 30), // Her 30 saniyede bir güncelle
+    const Duration(minutes: 1), // Her 1 dakikada bir güncelle (performans için)
     (_) => DateTime.now(),
   );
 });

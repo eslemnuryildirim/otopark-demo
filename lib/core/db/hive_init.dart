@@ -5,17 +5,19 @@ import 'package:otopark_demo/features/operations/domain/operation_type.dart';
 import 'package:otopark_demo/features/vehicles/domain/vehicle.dart';
 import 'package:otopark_demo/features/vehicles/domain/vehicle_status.dart';
 import 'package:otopark_demo/features/park_slots/domain/park_slot.dart';
+import 'package:otopark_demo/core/db/duration_adapter.dart';
 
 Future<void> initHive() async {
   await Hive.initFlutter();
 
-  // Register Adapters (TypeId'ler: 0-5)
+  // Register Adapters (TypeId'ler: 0-5, 100)
   Hive.registerAdapter(VehicleAdapter()); // typeId: 0
   Hive.registerAdapter(VehicleStatusAdapter()); // typeId: 1
   Hive.registerAdapter(OperationAdapter()); // typeId: 2
   Hive.registerAdapter(OperationTypeAdapter()); // typeId: 3
   Hive.registerAdapter(CountersAdapter()); // typeId: 4
   Hive.registerAdapter(ParkSlotAdapter()); // typeId: 5
+  Hive.registerAdapter(DurationAdapter()); // typeId: 100 - Duration için özel adapter
 
   // Open Boxes
   await Hive.openBox<Vehicle>('vehicles');
