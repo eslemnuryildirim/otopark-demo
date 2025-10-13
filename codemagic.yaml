@@ -7,7 +7,8 @@ workflows:
       xcode: latest
       cocoapods: default
       vars:
-        GRADLE_OPTS: "-Xmx6G -XX:MaxMetaspaceSize=3G"
+        GRADLE_OPTS: "-Xmx8G -XX:MaxMetaspaceSize=4G -XX:+UseG1GC"
+        JAVA_OPTS: "-Xmx8G -XX:MaxMetaspaceSize=4G"
     scripts:
       - name: Set up local.properties
         script: |
@@ -29,7 +30,7 @@ workflows:
           flutter build ios --release --no-codesign
       - name: Build Android (for testing)
         script: |
-          flutter build apk --release --target-platform android-arm64
+          flutter build apk --release --target-platform android-arm64 --split-per-abi
     artifacts:
       - build/ios/iphoneos/*.app
       - build/ios/iphoneos/Runner.app
