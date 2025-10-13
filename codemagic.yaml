@@ -15,6 +15,9 @@ workflows:
       - name: Get Flutter packages
         script: |
           flutter packages pub get
+      - name: Install iOS dependencies
+        script: |
+          cd ios && pod install --repo-update
       - name: Flutter analyze
         script: |
           flutter analyze
