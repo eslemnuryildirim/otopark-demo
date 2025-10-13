@@ -1,14 +1,16 @@
 workflows:
   ios-workflow:
     name: iOS Workflow
-    max_build_duration: 60
+    max_build_duration: 90
     environment:
       flutter: stable
       xcode: latest
       cocoapods: default
+      machine:
+        type: mac_mini_m1
       vars:
-        GRADLE_OPTS: "-Xmx8G -XX:MaxMetaspaceSize=4G -XX:+UseG1GC"
-        JAVA_OPTS: "-Xmx8G -XX:MaxMetaspaceSize=4G"
+        GRADLE_OPTS: "-Xmx12G -XX:MaxMetaspaceSize=6G -XX:+UseG1GC -XX:+UseStringDeduplication"
+        JAVA_OPTS: "-Xmx12G -XX:MaxMetaspaceSize=6G"
     scripts:
       - name: Set up local.properties
         script: |
@@ -16,6 +18,9 @@ workflows:
       - name: Get Flutter packages
         script: |
           flutter packages pub get
+      - name: Update CocoaPods specs
+        script: |
+          pod repo update
       - name: Install iOS dependencies
         script: |
           cd ios && pod install --repo-update
@@ -30,7 +35,7 @@ workflows:
           flutter build ios --release --no-codesign
       - name: Build Android (for testing)
         script: |
-          flutter build apk --release --target-platform android-arm64 --split-per-abi
+          flutter build apk --release --target-platform android-arm64 --split-per-abi --obfuscate --split-debug-info=build/app/outputs/symbols
     artifacts:
       - build/ios/iphoneos/*.app
       - build/ios/iphoneos/Runner.app
