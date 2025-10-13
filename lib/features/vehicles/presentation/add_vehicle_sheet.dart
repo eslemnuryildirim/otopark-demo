@@ -137,25 +137,55 @@ class _AddVehicleSheetState extends ConsumerState<AddVehicleSheet> {
     // Kamera ile fotoğraf çek
     final XFile? image = await picker.pickImage(
       source: ImageSource.camera,
-      imageQuality: 80,
+      imageQuality: 85,
     );
     
     if (image == null) return null;
     
     try {
-      // Gelişmiş OCR ile metni tanı (görüntü iyileştirme + Tesseract)
+      // Yükleme dialog'u göster
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Şase okunuyor...')),
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => PopScope(
+            canPop: false,
+            child: const AlertDialog(
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Şase numarası okunuyor...'),
+                  SizedBox(height: 8),
+                  Text(
+                    'Google ML Kit ile hızlı tarama',
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          ),
         );
       }
       
+      // Gelişmiş OCR ile metni tanı (3 farklı teknik)
       final lines = await OcrHelper.extractTextFromImage(image.path);
+      
+      // Yükleme dialog'unu kapat
+      if (context.mounted) {
+        Navigator.pop(context);
+      }
       
       if (lines.isEmpty) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Şase numarası okunamadı. Fotoğrafı daha net çekin.')),
+            const SnackBar(
+              content: Text('❌ Şase numarası okunamadı. Lütfen tekrar deneyin.'),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 3),
+            ),
           );
         }
         return null;
@@ -165,19 +195,50 @@ class _AddVehicleSheetState extends ConsumerState<AddVehicleSheet> {
       if (context.mounted) {
         return showDialog<String>(
           context: context,
+          barrierDismissible: true, // ✅ Dışarı tıklayınca kapanır
           builder: (context) => AlertDialog(
-            title: const Text('Şase Seçin'),
+            title: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.green),
+                const SizedBox(width: 8),
+                Text('${lines.length} Şase Bulundu'),
+              ],
+            ),
             content: SizedBox(
               width: double.maxFinite,
-              child: ListView.builder(
-                shrinkWrap: true,
-                itemCount: lines.length,
-                itemBuilder: (context, index) {
-                  return ListTile(
-                    title: Text(lines[index]),
-                    onTap: () => Navigator.pop(context, lines[index]),
-                  );
-                },
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'En uygun şase numarasını seçin:',
+                    style: TextStyle(fontSize: 13, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 12),
+                  Flexible(
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: lines.length,
+                      itemBuilder: (context, index) {
+                        return Card(
+                          child: ListTile(
+                            leading: CircleAvatar(
+                              child: Text('${index + 1}'),
+                            ),
+                            title: Text(
+                              lines[index],
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                            subtitle: Text('${lines[index].length} karakter'),
+                            onTap: () => Navigator.pop(context, lines[index]),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
               ),
             ),
             actions: [
@@ -190,9 +251,17 @@ class _AddVehicleSheetState extends ConsumerState<AddVehicleSheet> {
         );
       }
     } catch (e) {
+      // Hata durumunda yükleme dialog'unu kapat
+      if (context.mounted && Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
+      
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Hata: $e')),
+          SnackBar(
+            content: Text('❌ OCR Hatası: $e'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }

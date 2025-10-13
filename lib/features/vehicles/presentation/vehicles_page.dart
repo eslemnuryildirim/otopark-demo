@@ -29,8 +29,7 @@ class _VehiclesPageState extends ConsumerState<VehiclesPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Araçlar'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
+        // Theme'den otomatik renk alır (sarı yazı, koyu gri arka plan)
         actions: [
           IconButton(
             icon: const Icon(Icons.filter_list),
@@ -93,6 +92,8 @@ class _VehiclesPageState extends ConsumerState<VehiclesPage> {
           showModalBottomSheet(
             context: context,
             isScrollControlled: true,
+            isDismissible: true, // ✅ Dışarı tıklayınca kapanır
+            enableDrag: true, // ✅ Aşağı kaydırınca kapanır
             builder: (context) => const AddVehicleSheet(),
           );
         },

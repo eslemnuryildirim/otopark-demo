@@ -2,57 +2,65 @@ import 'dart:io';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:image/image.dart' as img;
 
-/// Hızlı ve Hafif OCR Helper - UI donmasını önler
+/// 🔍 Hafif ve Hızlı OCR Helper
+/// 
+/// Şase numarası okuma için optimize edilmiş, minimum işlemle maksimum sonuç.
+/// Performans odaklı, tek geçişli OCR sistemi.
 class OcrHelper {
-  /// Fotoğraftan şase numarası oku (optimize edilmiş)
+  /// Fotoğraftan şase numarası oku (ultra hızlı)
+  /// 
+  /// **Tek Geçiş Stratejisi:**
+  /// - Sadece temel görüntü iyileştirme (gri tonlama + kontrast)
+  /// - Google ML Kit'in kendi OCR optimizasyonlarına güven
+  /// - Minimum işlem = Maksimum hız
   static Future<List<String>> extractTextFromImage(String imagePath) async {
     try {
-      // 1. Basit görüntü iyileştirme (hızlı)
-      final enhancedPath = await _quickEnhance(imagePath);
+      // Hafif görüntü iyileştirme (isteğe bağlı)
+      final processedPath = await _lightProcess(imagePath);
       
-      // 2. ML Kit OCR
-      final inputImage = InputImage.fromFilePath(enhancedPath);
+      // Google ML Kit OCR (tek geçiş)
+      final inputImage = InputImage.fromFilePath(processedPath);
       final textRecognizer = TextRecognizer(script: TextRecognitionScript.latin);
       
-      final RecognizedText recognizedText = await textRecognizer.processImage(inputImage);
-      textRecognizer.close();
+      final recognizedText = await textRecognizer.processImage(inputImage);
+      await textRecognizer.close();
       
       // Geçici dosyayı sil
-      if (enhancedPath != imagePath) {
+      if (processedPath != imagePath) {
         try {
-          await File(enhancedPath).delete();
+          await File(processedPath).delete();
         } catch (_) {}
       }
       
-      if (recognizedText.text.isEmpty) return [];
-      
-      // 3. Metni topla
-      final Set<String> allTexts = {};
-      
+      // Metni topla ve filtrele
+      final results = <String>{};
       for (final block in recognizedText.blocks) {
         for (final line in block.lines) {
+          // Temizle
           final cleaned = line.text
               .replaceAll(RegExp(r'[^A-Z0-9]'), '')
               .toUpperCase();
-          if (cleaned.length >= 8) {
-            allTexts.add(cleaned);
+          
+          // Şase formatına uygunsa ekle
+          if (_isValidChassisFormat(cleaned)) {
+            results.add(cleaned);
           }
         }
       }
       
-      // 4. En iyi sonuçları döndür
-      final results = allTexts.toList()
+      // Uzunluğa göre sırala
+      final validResults = results.toList()
         ..sort((a, b) => b.length.compareTo(a.length));
       
-      return results;
+      return validResults;
     } catch (e) {
       print('OCR Hatası: $e');
       return [];
     }
   }
 
-  /// Hızlı görüntü iyileştirme (sadece temel işlemler)
-  static Future<String> _quickEnhance(String imagePath) async {
+  /// Hafif görüntü işleme (sadece gerekli olanlar)
+  static Future<String> _lightProcess(String imagePath) async {
     try {
       final file = File(imagePath);
       final bytes = await file.readAsBytes();
@@ -60,11 +68,9 @@ class OcrHelper {
       
       if (image == null) return imagePath;
 
-      // Sadece kritik işlemler (çok hızlı)
-      
-      // 1. Maksimum boyut kontrolü (performans için)
-      if (image.width > 2000) {
-        final scale = 2000 / image.width;
+      // 1. Boyut kontrolü (max 1500px - daha hızlı)
+      if (image.width > 1500 || image.height > 1500) {
+        final scale = 1500 / (image.width > image.height ? image.width : image.height);
         image = img.copyResize(
           image,
           width: (image.width * scale).toInt(),
@@ -73,20 +79,35 @@ class OcrHelper {
         );
       }
 
-      // 2. Gri tonlama
+      // 2. Gri tonlama (OCR için daha iyi)
       image = img.grayscale(image);
 
-      // 3. Kontrast artırma (hafif)
-      image = img.adjustColor(image, contrast: 1.5);
+      // 3. Hafif kontrast artırma (çok agresif değil)
+      image = img.adjustColor(image, contrast: 1.4, brightness: 1.05);
 
-      // Geçici dosyaya kaydet
-      final tempPath = '${imagePath}_temp.jpg';
-      await File(tempPath).writeAsBytes(img.encodeJpg(image, quality: 85));
+      // Geçici dosyaya kaydet (düşük kalite = hız)
+      final tempPath = '${imagePath}_light.jpg';
+      await File(tempPath).writeAsBytes(img.encodeJpg(image, quality: 80));
       
       return tempPath;
     } catch (e) {
-      print('Görüntü iyileştirme hatası: $e');
-      return imagePath;
+      print('Hafif işleme hatası: $e');
+      return imagePath; // Hata durumunda orijinal fotoğrafı kullan
     }
+  }
+
+  /// Şase formatı doğrulama (basit ve hızlı)
+  static bool _isValidChassisFormat(String text) {
+    // Çok kısa veya çok uzun
+    if (text.length < 8 || text.length > 25) return false;
+    
+    // Sadece harf ve rakam
+    if (!RegExp(r'^[A-Z0-9]+$').hasMatch(text)) return false;
+    
+    // En az 3 rakam içermeli
+    final digitCount = text.split('').where((c) => RegExp(r'\d').hasMatch(c)).length;
+    if (digitCount < 3) return false;
+    
+    return true;
   }
 }

@@ -12,8 +12,7 @@ class CountersPage extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Sayaçlar'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
+        // Theme'den otomatik renk alır (sarı yazı, koyu gri arka plan)
       ),
       body: countersAsync.when(
         data: (counters) {

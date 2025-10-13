@@ -19,8 +19,7 @@ class VehicleDetailPage extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Araç Detayı'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
+        // Theme'den otomatik renk alır (sarı yazı, koyu gri arka plan)
         actions: [
           // Durum değiştirme menüsü
           PopupMenuButton<VehicleStatus>(

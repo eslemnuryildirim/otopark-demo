@@ -29,6 +29,9 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        
+        // 🌍 Sadece Türkçe dil desteği (gereksiz dilleri kaldır)
+        resourceConfigurations.addAll(listOf("tr", "en"))
     }
 
     buildTypes {
@@ -36,6 +39,14 @@ android {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
+            
+            // 🚀 BOYUT OPTİMİZASYONU: Kod sıkıştırma ve optimizasyon
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
     }
 }

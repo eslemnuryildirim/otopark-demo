@@ -13,8 +13,7 @@ class ParkSlotsPage extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Park Yerleri'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
+        // Theme'den otomatik renk alır (sarı yazı, koyu gri arka plan)
       ),
       body: slotsAsync.when(
         data: (slots) {

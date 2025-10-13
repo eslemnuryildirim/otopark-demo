@@ -26,8 +26,7 @@ class _OperationsPageState extends ConsumerState<OperationsPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('İşlemler'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
+        // Theme'den otomatik renk alır (sarı yazı, koyu gri arka plan)
         actions: [
           IconButton(
             icon: const Icon(Icons.filter_list),
