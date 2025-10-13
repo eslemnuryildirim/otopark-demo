@@ -6,6 +6,8 @@ workflows:
       flutter: stable
       xcode: latest
       cocoapods: default
+      vars:
+        GRADLE_OPTS: "-Xmx6G -XX:MaxMetaspaceSize=3G"
     scripts:
       - name: Set up local.properties
         script: |
@@ -22,6 +24,9 @@ workflows:
       - name: Build iOS
         script: |
           flutter build ios --release --no-codesign
+      - name: Build Android (for testing)
+        script: |
+          flutter build apk --release --target-platform android-arm64
     artifacts:
       - build/ios/iphoneos/*.app
       - build/ios/iphoneos/Runner.app
