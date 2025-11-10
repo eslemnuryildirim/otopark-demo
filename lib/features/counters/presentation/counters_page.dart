@@ -16,7 +16,7 @@ class CountersPage extends ConsumerWidget {
       ),
       body: countersAsync.when(
         data: (counters) {
-          return Padding(
+          return SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
             child: Column(
               children: [
@@ -107,8 +107,7 @@ class CountersPage extends ConsumerWidget {
                   ],
                 ),
                 
-                const Spacer(),
-                const SizedBox(height: 16),
+                const SizedBox(height: 32),
               ],
             ),
           );

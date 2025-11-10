@@ -1,7 +1,9 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:otopark_demo/core/utils/ocr_helper.dart';
+import 'package:otopark_demo/core/services/simple_ocr_service.dart';
+import 'package:otopark_demo/core/utils/vin_decoder.dart';
 import 'package:otopark_demo/core/utils/validators.dart';
 import 'package:otopark_demo/features/vehicles/domain/vehicle.dart';
 import 'package:otopark_demo/features/vehicles/domain/vehicle_status.dart';
@@ -20,6 +22,9 @@ class _AddVehicleSheetState extends ConsumerState<AddVehicleSheet> {
   final _brandController = TextEditingController();
   final _modelController = TextEditingController();
   final _colorController = TextEditingController();
+  final _vinController = TextEditingController();
+  final _productionYearController = TextEditingController();
+  final _ageController = TextEditingController();
 
   @override
   void dispose() {
@@ -27,6 +32,9 @@ class _AddVehicleSheetState extends ConsumerState<AddVehicleSheet> {
     _brandController.dispose();
     _modelController.dispose();
     _colorController.dispose();
+    _vinController.dispose();
+    _productionYearController.dispose();
+    _ageController.dispose();
     super.dispose();
   }
 
@@ -74,20 +82,44 @@ class _AddVehicleSheetState extends ConsumerState<AddVehicleSheet> {
             ),
             const SizedBox(height: 24),
             TextFormField(
-              controller: _plateController,
+              controller: _vinController,
               decoration: InputDecoration(
-                labelText: 'Şase',
+                labelText: 'Şase Numarası (VIN)',
                 prefixIcon: const Icon(Icons.badge),
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.camera_alt),
-                  onPressed: () async {
-                    final scanned = await _scanChassisNumber(context);
-                    if (scanned != null) {
-                      _plateController.text = scanned;
-                    }
-                  },
-                  tooltip: 'Şase Tara (OCR)',
+                suffixIcon: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.camera_alt),
+                      onPressed: () => _scanVin(context),
+                      tooltip: 'Şase Tara (OCR)',
+                    ),
+                    if (_vinController.text.isNotEmpty)
+                      IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          _vinController.clear();
+                          _brandController.clear();
+                          _productionYearController.clear();
+                          _ageController.clear();
+                        },
+                      ),
+                  ],
                 ),
+              ),
+              onChanged: (vin) {
+                if (vin.length >= 10) {
+                  _updateVinInfo(vin);
+                }
+              },
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _plateController,
+              decoration: const InputDecoration(
+                labelText: 'Plaka',
+                prefixIcon: Icon(Icons.directions_car),
+                hintText: '34 ABC 123',
               ),
               validator: (value) => Validators.validatePlate(value),
             ),
@@ -106,6 +138,32 @@ class _AddVehicleSheetState extends ConsumerState<AddVehicleSheet> {
                 labelText: 'Model',
                 prefixIcon: Icon(Icons.car_rental),
               ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _productionYearController,
+                    readOnly: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Üretim Yılı',
+                      prefixIcon: Icon(Icons.calendar_today),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: TextFormField(
+                    controller: _ageController,
+                    readOnly: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Yaş',
+                      prefixIcon: Icon(Icons.access_time),
+                    ),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
             TextFormField(
@@ -131,16 +189,60 @@ class _AddVehicleSheetState extends ConsumerState<AddVehicleSheet> {
     );
   }
 
-  Future<String?> _scanChassisNumber(BuildContext context) async {
+  /// VIN bilgilerini güncelle (marka, üretim yılı, yaş)
+  void _updateVinInfo(String vin) {
+    final brand = VinDecoder.getBrandFromVin(vin);
+    final productionYear = VinDecoder.getProductionYear(vin);
+    final age = VinDecoder.getAge(vin);
+    
+    if (brand != 'Bilinmiyor') {
+      _brandController.text = brand;
+    }
+    
+    if (productionYear != null) {
+      _productionYearController.text = productionYear.toString();
+    }
+    
+    if (age != null) {
+      _ageController.text = '$age yaşında';
+    }
+  }
+
+  /// VIN tara (kamera veya galeri)
+  Future<void> _scanVin(BuildContext context) async {
     final ImagePicker picker = ImagePicker();
     
-    // Kamera ile fotoğraf çek
-    final XFile? image = await picker.pickImage(
-      source: ImageSource.camera,
-      imageQuality: 85,
+    // Kaynak seçimi
+    final source = await showDialog<ImageSource>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Şase Numarası Tara'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text('Kamera'),
+              onTap: () => Navigator.pop(context, ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('Galeri'),
+              onTap: () => Navigator.pop(context, ImageSource.gallery),
+            ),
+          ],
+        ),
+      ),
     );
     
-    if (image == null) return null;
+    if (source == null) return;
+    
+    final XFile? image = await picker.pickImage(
+      source: source,
+      imageQuality: 90,
+    );
+    
+    if (image == null) return;
     
     try {
       // Yükleme dialog'u göster
@@ -159,7 +261,7 @@ class _AddVehicleSheetState extends ConsumerState<AddVehicleSheet> {
                   Text('Şase numarası okunuyor...'),
                   SizedBox(height: 8),
                   Text(
-                    'Google ML Kit ile hızlı tarama',
+                    'Görüntü işleme ile VIN taranıyor',
                     style: TextStyle(fontSize: 12, color: Colors.grey),
                     textAlign: TextAlign.center,
                   ),
@@ -170,38 +272,41 @@ class _AddVehicleSheetState extends ConsumerState<AddVehicleSheet> {
         );
       }
       
-      // Gelişmiş OCR ile metni tanı (3 farklı teknik)
-      final lines = await OcrHelper.extractTextFromImage(image.path);
+      // Görüntüyü byte array'e çevir
+      final imageBytes = await image.readAsBytes();
+      
+      // OCR ile VIN oku
+      final vins = await SimpleOcrService.extractVin(imageBytes);
       
       // Yükleme dialog'unu kapat
       if (context.mounted) {
         Navigator.pop(context);
       }
       
-      if (lines.isEmpty) {
+      if (vins.isEmpty) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('❌ Şase numarası okunamadı. Lütfen tekrar deneyin.'),
-              backgroundColor: Colors.red,
+              backgroundColor: Colors.orange,
               duration: Duration(seconds: 3),
             ),
           );
         }
-        return null;
+        return;
       }
       
-      // Kullanıcıya okunan metinleri göster
+      // Kullanıcıya okunan VIN'leri göster
       if (context.mounted) {
-        return showDialog<String>(
+        final selectedVin = await showDialog<String>(
           context: context,
-          barrierDismissible: true, // ✅ Dışarı tıklayınca kapanır
+          barrierDismissible: true,
           builder: (context) => AlertDialog(
             title: Row(
               children: [
                 const Icon(Icons.check_circle, color: Colors.green),
                 const SizedBox(width: 8),
-                Text('${lines.length} Şase Bulundu'),
+                Text('${vins.length} VIN Bulundu'),
               ],
             ),
             content: SizedBox(
@@ -217,22 +322,34 @@ class _AddVehicleSheetState extends ConsumerState<AddVehicleSheet> {
                   Flexible(
                     child: ListView.builder(
                       shrinkWrap: true,
-                      itemCount: lines.length,
+                      itemCount: vins.length,
                       itemBuilder: (context, index) {
+                        final vin = vins[index];
+                        final brand = VinDecoder.getBrandFromVin(vin);
+                        final year = VinDecoder.getProductionYear(vin);
+                        
                         return Card(
                           child: ListTile(
                             leading: CircleAvatar(
                               child: Text('${index + 1}'),
                             ),
                             title: Text(
-                              lines[index],
+                              vin,
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 letterSpacing: 1.2,
+                                fontFamily: 'monospace',
                               ),
                             ),
-                            subtitle: Text('${lines[index].length} karakter'),
-                            onTap: () => Navigator.pop(context, lines[index]),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('${vin.length} karakter'),
+                                if (brand != 'Bilinmiyor') Text('Marka: $brand'),
+                                if (year != null) Text('Üretim: $year'),
+                              ],
+                            ),
+                            onTap: () => Navigator.pop(context, vin),
                           ),
                         );
                       },
@@ -249,6 +366,11 @@ class _AddVehicleSheetState extends ConsumerState<AddVehicleSheet> {
             ],
           ),
         );
+        
+        if (selectedVin != null) {
+          _vinController.text = selectedVin;
+          _updateVinInfo(selectedVin);
+        }
       }
     } catch (e) {
       // Hata durumunda yükleme dialog'unu kapat
@@ -265,7 +387,5 @@ class _AddVehicleSheetState extends ConsumerState<AddVehicleSheet> {
         );
       }
     }
-    
-    return null;
   }
 }

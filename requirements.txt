@@ -1,0 +1,7 @@
+opencv-python
+numpy
+paddlepaddle
+paddleocr
+flask
+flask-cors
+Pillow

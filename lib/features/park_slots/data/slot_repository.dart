@@ -80,3 +80,75 @@ class HiveSlotRepository implements SlotRepository {
   }
 }
 
+/// Mock Slot Repository - Test ve geliştirme için
+class MockSlotRepository implements SlotRepository {
+  final List<ParkSlot> _slots = [];
+
+  MockSlotRepository() {
+    _initializeMockSlots();
+  }
+
+  void _initializeMockSlots() {
+    // Servis alanları
+    final serviceSlots = [
+      ParkSlot(id: 'YIKAMA', label: 'YIKAMA', isServiceArea: true),
+      ParkSlot(id: 'BAKIM', label: 'BAKIM', isServiceArea: true),
+    ];
+
+    // Ana park alanları - 13 spot per row
+    final rows = ['A', 'B', 'C', 'D', 'E', 'F'];
+    final parkSlots = <ParkSlot>[];
+    
+    for (var row in rows) {
+      for (var i = 1; i <= 13; i++) {
+        parkSlots.add(
+          ParkSlot(
+            id: '$row$i',
+            label: '$row-${i.toString().padLeft(2, '0')}',
+            isServiceArea: false,
+          ),
+        );
+      }
+    }
+
+    _slots.addAll([...serviceSlots, ...parkSlots]);
+  }
+
+  @override
+  Future<List<ParkSlot>> getSlots() async {
+    return List.from(_slots);
+  }
+
+  @override
+  Future<ParkSlot?> getSlotById(String id) async {
+    try {
+      return _slots.firstWhere((slot) => slot.id == id);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  @override
+  Future<void> addSlot(ParkSlot slot) async {
+    _slots.add(slot);
+  }
+
+  @override
+  Future<void> updateSlot(ParkSlot slot) async {
+    final index = _slots.indexWhere((s) => s.id == slot.id);
+    if (index != -1) {
+      _slots[index] = slot;
+    }
+  }
+
+  @override
+  Future<void> deleteSlot(String id) async {
+    _slots.removeWhere((slot) => slot.id == id);
+  }
+
+  @override
+  Future<void> initializeDefaultSlots() async {
+    // Mock data zaten initialize edildi
+  }
+}
+

@@ -4,6 +4,7 @@ import 'package:otopark_demo/app/app.dart';
 import 'package:otopark_demo/core/db/hive_init.dart';
 import 'package:otopark_demo/core/db/firebase_init.dart';
 import 'package:otopark_demo/core/db/sync_service.dart';
+import 'package:otopark_demo/core/services/ocr_server_manager.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -12,8 +13,9 @@ void main() async {
   try {
     await FirebaseInit.initialize();
     print('✅ Firebase başlatıldı');
-  } catch (e) {
+  } catch (e, stackTrace) {
     print('⚠️ Firebase başlatılamadı (offline mode): $e');
+    print('Stack trace: $stackTrace');
   }
   
   // 2. Hive'ı başlat
@@ -25,6 +27,20 @@ void main() async {
     print('✅ Sync servisi başlatıldı');
   } catch (e) {
     print('⚠️ Sync servisi başlatılamadı (offline mode): $e');
+  }
+  
+  // 4. OCR sunucusunu başlat (arka planda, hata olursa devam et)
+  try {
+    // Arka planda başlat (await etme, uygulama başlamasını beklemesin)
+    OcrServerManager.startServerIfNeeded().then((started) {
+      if (started) {
+        print('✅ OCR sunucusu otomatik başlatıldı');
+      } else {
+        print('⚠️ OCR sunucusu başlatılamadı (manuel başlatılabilir)');
+      }
+    });
+  } catch (e) {
+    print('⚠️ OCR sunucusu başlatılamadı: $e');
   }
   
   runApp(const ProviderScope(child: OtoparkApp()));

@@ -27,13 +27,14 @@ class VehicleAdapter extends TypeAdapter<Vehicle> {
       updatedAt: fields[7] as DateTime,
       currentParkSlotId: fields[8] as String?,
       parkStartAt: fields[9] as DateTime?,
+      damagedParts: (fields[10] as Map).cast<String, bool>(),
     );
   }
 
   @override
   void write(BinaryWriter writer, Vehicle obj) {
     writer
-      ..writeByte(10)
+      ..writeByte(11)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -53,7 +54,9 @@ class VehicleAdapter extends TypeAdapter<Vehicle> {
       ..writeByte(8)
       ..write(obj.currentParkSlotId)
       ..writeByte(9)
-      ..write(obj.parkStartAt);
+      ..write(obj.parkStartAt)
+      ..writeByte(10)
+      ..write(obj.damagedParts);
   }
 
   @override

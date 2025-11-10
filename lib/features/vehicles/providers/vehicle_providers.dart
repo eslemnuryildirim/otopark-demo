@@ -110,17 +110,28 @@ class VehiclesNotifier extends AsyncNotifier<List<Vehicle>> {
       }
 
       // 4. Slot'ları güncelle
-      if (result.fromSlotId != null) {
-        await ref.read(slotsProvider.notifier).vacateSlot(result.fromSlotId!);
+      if (result.fromSlotId != null && result.fromSlotId!.isNotEmpty) {
+        try {
+          await ref.read(slotsProvider.notifier).vacateSlot(result.fromSlotId!);
+        } catch (e) {
+          print('⚠️ Slot boşaltma hatası: $e');
+        }
       }
-      if (result.toSlotId != null) {
-        await ref.read(slotsProvider.notifier).occupySlot(result.toSlotId!, vehicle.id);
+      if (result.toSlotId != null && result.toSlotId!.isNotEmpty) {
+        try {
+          await ref.read(slotsProvider.notifier).occupySlot(result.toSlotId!, vehicle.id);
+        } catch (e) {
+          print('⚠️ Slot doldurma hatası: $e');
+        }
       }
 
       // 5. UI'ı yenile
       state = AsyncValue.data(
         await ref.read(vehicleRepositoryProvider).getVehicles(),
       );
+      
+      // 6. Slots provider'ı da yenile (kroki sayfası için)
+      ref.invalidate(slotsProvider);
 
       return null; // Başarılı
     } catch (e) {

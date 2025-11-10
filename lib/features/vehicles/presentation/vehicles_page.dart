@@ -8,6 +8,7 @@ import 'package:otopark_demo/features/vehicles/providers/vehicle_providers.dart'
 import 'package:otopark_demo/features/vehicles/providers/park_timer_provider.dart';
 import 'package:otopark_demo/features/vehicles/presentation/add_vehicle_sheet.dart';
 import 'package:otopark_demo/features/park_slots/providers/slot_providers.dart';
+import 'package:otopark_demo/features/vehicle_expertiz/presentation/expertiz_detail_page.dart';
 
 class VehiclesPage extends ConsumerStatefulWidget {
   const VehiclesPage({super.key});
@@ -148,6 +149,12 @@ class _VehiclesPageState extends ConsumerState<VehiclesPage> {
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // Ekspertiz butonu
+            IconButton(
+              onPressed: () => _showExpertizDetail(vehicle.id, vehicle.plate),
+              icon: const Icon(Icons.assessment, color: Colors.blue),
+              tooltip: 'Ekspertizi Gör/Düzenle',
+            ),
             Chip(
               label: Text(vehicle.status.displayName),
               backgroundColor: vehicle.status.color.withOpacity(0.2),
@@ -399,6 +406,19 @@ class _VehiclesPageState extends ConsumerState<VehiclesPage> {
             }).toList(),
           ],
         ),
+      ),
+    );
+  }
+
+  /// Ekspertiz detay sayfasını göster
+  void _showExpertizDetail(String vehicleId, String vehiclePlate) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => ExpertizDetailPage(
+        vehicleId: vehicleId,
+        vehiclePlate: vehiclePlate,
       ),
     );
   }

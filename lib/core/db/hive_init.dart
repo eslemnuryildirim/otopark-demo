@@ -58,6 +58,7 @@ Future<void> _seedMockVehicles(Box<Vehicle> vehicleBox, Box<Counters> counterBox
       parkStartAt: now.subtract(const Duration(minutes: 45)),
       createdAt: now,
       updatedAt: now,
+      damagedParts: const {},
     ),
     Vehicle(
       id: 'mock-2',
@@ -68,6 +69,7 @@ Future<void> _seedMockVehicles(Box<Vehicle> vehicleBox, Box<Counters> counterBox
       status: VehicleStatus.inMaintenance,
       createdAt: now,
       updatedAt: now,
+      damagedParts: const {},
     ),
     Vehicle(
       id: 'mock-3',
@@ -78,6 +80,7 @@ Future<void> _seedMockVehicles(Box<Vehicle> vehicleBox, Box<Counters> counterBox
       status: VehicleStatus.inWash,
       createdAt: now,
       updatedAt: now,
+      damagedParts: const {},
     ),
     Vehicle(
       id: 'mock-4',
@@ -88,6 +91,7 @@ Future<void> _seedMockVehicles(Box<Vehicle> vehicleBox, Box<Counters> counterBox
       status: VehicleStatus.exited,
       createdAt: now,
       updatedAt: now,
+      damagedParts: const {},
     ),
   ];
 

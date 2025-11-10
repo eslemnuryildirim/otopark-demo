@@ -3,9 +3,8 @@ import 'package:otopark_demo/features/park_slots/data/slot_repository.dart';
 import 'package:otopark_demo/features/park_slots/domain/park_slot.dart';
 
 final slotRepositoryProvider = Provider<SlotRepository>((ref) {
-  final repository = HiveSlotRepository();
-  repository.init(); // Async init - varsayılan slotları oluştur
-  return repository;
+  // Geçici olarak MockRepository kullan (Hive hatası nedeniyle)
+  return MockSlotRepository();
 });
 
 final slotsProvider = AsyncNotifierProvider<SlotsNotifier, List<ParkSlot>>(

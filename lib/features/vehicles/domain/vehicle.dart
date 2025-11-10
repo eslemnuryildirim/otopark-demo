@@ -36,6 +36,9 @@ class Vehicle extends HiveObject {
   @HiveField(9)
   DateTime? parkStartAt; // Park başlangıç zamanı (süre hesabı için)
 
+  @HiveField(10)
+  Map<String, bool> damagedParts; // Hasar bilgileri (parça ID -> hasarlı mı)
+
   Vehicle({
     required this.id,
     required this.plate,
@@ -47,6 +50,7 @@ class Vehicle extends HiveObject {
     required this.updatedAt,
     this.currentParkSlotId,
     this.parkStartAt,
+    this.damagedParts = const {},
   });
 
   /// Park süresini dakika olarak hesapla
@@ -67,6 +71,7 @@ class Vehicle extends HiveObject {
     DateTime? updatedAt,
     String? currentParkSlotId,
     DateTime? parkStartAt,
+    Map<String, bool>? damagedParts,
     bool clearParkSlotId = false,
     bool clearParkStartAt = false,
   }) {
@@ -81,6 +86,7 @@ class Vehicle extends HiveObject {
       updatedAt: updatedAt ?? this.updatedAt,
       currentParkSlotId: clearParkSlotId ? null : (currentParkSlotId ?? this.currentParkSlotId),
       parkStartAt: clearParkStartAt ? null : (parkStartAt ?? this.parkStartAt),
+      damagedParts: damagedParts ?? this.damagedParts,
     );
   }
 
@@ -97,6 +103,7 @@ class Vehicle extends HiveObject {
       'updatedAt': updatedAt.toIso8601String(),
       'currentParkSlotId': currentParkSlotId,
       'parkStartAt': parkStartAt?.toIso8601String(),
+      'damagedParts': damagedParts,
     };
   }
 
@@ -115,6 +122,7 @@ class Vehicle extends HiveObject {
       parkStartAt: json['parkStartAt'] != null 
           ? DateTime.parse(json['parkStartAt'] as String)
           : null,
+      damagedParts: (json['damagedParts'] as Map<String, dynamic>?)?.cast<String, bool>() ?? {},
     );
   }
 }

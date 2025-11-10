@@ -1,0 +1,37 @@
+/* Buhari Otomotiv Custom Cursor Styles */
+
+/* Varsayılan imleç: kontrastlı */
+html, body {
+  cursor: url("/icons/cursor-32-outline.png") 16 16, auto;
+}
+
+/* Koyu zeminde sade sürüm */
+[data-cursor="solid"] {
+  cursor: url("/icons/cursor-32.png") 16 16, auto;
+}
+
+/* Link/CTA üzerinde pointer davranışı korunur, ama custom cursor ile */
+a, button, [role="button"] {
+  cursor: url("/icons/cursor-32-outline.png") 16 16, pointer;
+}
+
+/* Yüksek DPI ekranlar için alternatif (gerekirse sınıfa ekle) */
+.cursor-lg {
+  cursor: url("/icons/cursor-48-outline.png") 24 24, auto;
+}
+
+/* Sadece bu bölümde logolu imleç */
+.section-logo-cursor { 
+  cursor: url("/icons/cursor-32-outline.png") 16 16, auto; 
+}
+
+/* Flutter Material Design uyumlu */
+.material-cursor {
+  cursor: url("/icons/cursor-32-outline.png") 16 16, auto;
+}
+
+/* Hover efektleri için */
+.hover-cursor:hover {
+  cursor: url("/icons/cursor-32-outline.png") 16 16, pointer;
+}
+

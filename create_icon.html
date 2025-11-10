@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Buhari Otomotiv Icon Creator</title>
+    <style>
+        body {
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        .icon-container {
+            width: 512px;
+            height: 512px;
+            background: #000;
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            border: 10px solid #FFD700;
+            box-shadow: 0 8px 32px rgba(255, 215, 0, 0.3);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .icon-container:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(255, 215, 0, 0.5);
+        }
+        .icon-container:active {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 215, 0, 0.4);
+        }
+        .inner-circle {
+            width: 300px;
+            height: 300px;
+            background: #000;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .logo-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+        }
+        .main-logo {
+            width: 200px;
+            height: 200px;
+            background: #FFD700;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+        .logo-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 20px;
+        }
+        .company-name {
+            position: absolute;
+            bottom: 20px;
+            font-size: 30px;
+            font-weight: bold;
+            color: #FFD700;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <button class="icon-container" onclick="createIcon()">
+        <div class="inner-circle">
+            <div class="logo-container">
+                <div class="main-logo">
+                    <img src="flutter_17.png" alt="Buhari Logo" class="logo-image" id="logoImage">
+                </div>
+            </div>
+        </div>
+        <div class="company-name">Buhari<br>OTOMOTİV</div>
+    </button>
+    
+    <script>
+        // Canvas ile icon oluştur
+        function createIcon() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 1024;
+            canvas.height = 1024;
+            const ctx = canvas.getContext('2d');
+            
+            // Siyah arka plan
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(0, 0, 1024, 1024);
+            
+            // Sarı button arka planı (yuvarlak köşeli)
+            ctx.fillStyle = '#FFD700';
+            ctx.beginPath();
+            ctx.roundRect(112, 112, 800, 800, 40);
+            ctx.fill();
+            
+            // Siyah kenar
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 20;
+            ctx.stroke();
+            
+            // İç siyah daire
+            ctx.fillStyle = '#000000';
+            ctx.beginPath();
+            ctx.arc(512, 512, 300, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            // Attığınız image'ı yükle ve çiz
+            const logoImg = document.getElementById('logoImage');
+            if (logoImg && logoImg.complete) {
+                // Sarı arka plan
+                ctx.fillStyle = '#FFD700';
+                ctx.beginPath();
+                ctx.roundRect(412, 412, 200, 200, 40);
+                ctx.fill();
+                
+                // Logo gölgesi
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+                ctx.shadowBlur = 16;
+                ctx.shadowOffsetX = 0;
+                ctx.shadowOffsetY = 4;
+                
+                // Image'ı çiz
+                ctx.drawImage(logoImg, 412, 412, 200, 200);
+                
+                // Gölgeyi sıfırla
+                ctx.shadowColor = 'transparent';
+                ctx.shadowBlur = 0;
+            } else {
+                // Fallback: Eğer image yüklenmemişse "B" harfi
+                ctx.fillStyle = '#FFD700';
+                ctx.beginPath();
+                ctx.roundRect(412, 412, 200, 200, 40);
+                ctx.fill();
+                
+                ctx.fillStyle = '#000000';
+                ctx.font = 'bold 120px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('B', 512, 512);
+            }
+            
+            // "Buhari OTOMOTİV" yazısı
+            ctx.font = 'bold 60px Arial';
+            ctx.fillText('Buhari', 512, 800);
+            ctx.fillText('OTOMOTİV', 512, 900);
+            
+            // PNG olarak indir
+            const link = document.createElement('a');
+            link.download = 'buhari_icon.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+        
+        // Button'a tıklandığında icon oluştur
+        // createIcon() fonksiyonu button onclick ile çağrılacak
+    </script>
+</body>
+</html>
