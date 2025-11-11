@@ -243,11 +243,14 @@ class ExpertizStatusSelector extends StatelessWidget {
                         size: 16,
                       ),
                       const SizedBox(width: 8),
-                      Text(
-                        status.displayName,
-                        style: TextStyle(
-                          color: isSelected ? Colors.white : status.color,
-                          fontWeight: FontWeight.w600,
+                      Flexible(
+                        child: Text(
+                          status.displayName,
+                          style: TextStyle(
+                            color: isSelected ? Colors.white : status.color,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],

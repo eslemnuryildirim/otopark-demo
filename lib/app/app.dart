@@ -16,7 +16,10 @@ class _OtoparkAppState extends ConsumerState<OtoparkApp> {
   void initState() {
     super.initState();
     // İlk açılışta cloud'dan sync yap (arka planda)
-    _initialSync();
+    // Widget build edildikten sonra çalıştır (ref hazır olmalı)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initialSync();
+    });
   }
 
   Future<void> _initialSync() async {
@@ -27,6 +30,9 @@ class _OtoparkAppState extends ConsumerState<OtoparkApp> {
       // 2. Vehicles sync
       final vehicleRepo = ref.read(vehicleRepositoryProvider);
       await vehicleRepo.syncFromCloud();
+      
+      // 3. Provider'ı yenile (yeni verileri göster)
+      ref.invalidate(vehiclesProvider);
       
       // Diğer sync'ler de buraya eklenebilir
       // await countersRepo.syncFromCloud();

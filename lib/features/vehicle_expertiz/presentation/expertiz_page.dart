@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:otopark_demo/features/vehicles/presentation/vehicles_provider.dart';
+import 'package:otopark_demo/features/vehicles/providers/vehicle_providers.dart';
 import 'package:otopark_demo/features/vehicles/domain/vehicle.dart';
 import 'package:otopark_demo/features/vehicles/domain/vehicle_status.dart';
 import 'expertiz_detail_page.dart';
@@ -30,16 +30,26 @@ class _ExpertizPageState extends ConsumerState<ExpertizPage> {
             icon: const Icon(Icons.search),
             onPressed: () => _showSearchDialog(),
           ),
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () => _syncFromFirebase(context),
+            tooltip: 'Firebase\'den senkronize et',
+          ),
         ],
       ),
       backgroundColor: Colors.black,
       body: vehiclesAsync.when(
         data: (vehicles) {
+          // Debug: Kaç araç geldi?
+          print('📊 Ekspertiz sayfası: Toplam ${vehicles.length} araç geldi');
+          
           final filteredVehicles = vehicles.where((vehicle) {
             return vehicle.plate.toLowerCase().contains(_searchQuery.toLowerCase()) ||
                 (vehicle.brand?.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false) ||
                 (vehicle.model?.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false);
           }).toList();
+
+          print('🔍 Arama sonrası: ${filteredVehicles.length} araç gösteriliyor');
 
           if (filteredVehicles.isEmpty) {
             return _buildEmptyState();
@@ -142,7 +152,9 @@ class _ExpertizPageState extends ConsumerState<ExpertizPage> {
               ),
             ),
             const SizedBox(height: 4),
-            Row(
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
               children: [
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -159,8 +171,7 @@ class _ExpertizPageState extends ConsumerState<ExpertizPage> {
                     ),
                   ),
                 ),
-                if (vehicle.currentParkSlotId != null) ...[
-                  const SizedBox(width: 8),
+                if (vehicle.currentParkSlotId != null)
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
@@ -176,7 +187,6 @@ class _ExpertizPageState extends ConsumerState<ExpertizPage> {
                       ),
                     ),
                   ),
-                ],
               ],
             ),
           ],
@@ -258,5 +268,53 @@ class _ExpertizPageState extends ConsumerState<ExpertizPage> {
         vehiclePlate: vehiclePlate,
       ),
     );
+  }
+
+  /// Firebase'den araçları senkronize et
+  Future<void> _syncFromFirebase(BuildContext context) async {
+    // Loading göster
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+
+    try {
+      // 1. Firebase'den sync yap
+      final vehicleRepo = ref.read(vehicleRepositoryProvider);
+      await vehicleRepo.syncFromCloud();
+      
+      // 2. Provider'ı yenile (yeni verileri çek)
+      ref.invalidate(vehiclesProvider);
+      
+      // 3. Başarı mesajı göster
+      if (context.mounted) {
+        Navigator.of(context).pop(); // Loading'i kapat
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Firebase\'den araçlar senkronize edildi'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      print('❌ Sync hatası: $e');
+      
+      if (context.mounted) {
+        Navigator.of(context).pop(); // Loading'i kapat
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Sync hatası: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
   }
 }

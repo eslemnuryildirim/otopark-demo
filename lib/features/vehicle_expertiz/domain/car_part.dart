@@ -1,55 +1,50 @@
-/// Araç parçaları enum'ı
+/// Araç parçaları enum'ı - HTML kodlarına göre
 enum CarPart {
-  // Ön tampon ve farlar
-  frontBumper('Ön Tampon', 'front_bumper'),
-  frontLeftLight('Ön Sol Far', 'front_left_light'),
-  frontRightLight('Ön Sağ Far', 'front_right_light'),
-  
-  // Arka tampon ve stop lambaları
-  rearBumper('Arka Tampon', 'rear_bumper'),
-  rearLeftLight('Arka Sol Stop', 'rear_left_light'),
-  rearRightLight('Arka Sağ Stop', 'rear_right_light'),
-  
-  // Sol taraf kapılar ve çamurluklar
-  frontLeftDoor('Ön Sol Kapı', 'front_left_door'),
-  frontLeftFender('Ön Sol Çamurluk', 'front_left_fender'),
-  rearLeftDoor('Arka Sol Kapı', 'rear_left_door'),
-  rearLeftFender('Arka Sol Çamurluk', 'rear_left_fender'),
-  
-  // Sağ taraf kapılar ve çamurluklar
-  frontRightDoor('Ön Sağ Kapı', 'front_right_door'),
-  frontRightFender('Ön Sağ Çamurluk', 'front_right_fender'),
-  rearRightDoor('Arka Sağ Kapı', 'rear_right_door'),
-  rearRightFender('Arka Sağ Çamurluk', 'rear_right_fender'),
-  
-  // Orta gövde
-  hood('Kaput', 'hood'),
-  roof('Tavan', 'roof'),
-  trunk('Bagaj', 'trunk'),
-  
-  // Camlar
-  frontWindshield('Ön Cam', 'front_windshield'),
-  rearWindshield('Arka Cam', 'rear_windshield'),
-  frontLeftWindow('Ön Sol Cam', 'front_left_window'),
-  frontRightWindow('Ön Sağ Cam', 'front_right_window'),
-  rearLeftWindow('Arka Sol Cam', 'rear_left_window'),
-  rearRightWindow('Arka Sağ Cam', 'rear_right_window');
+  // HTML kodlarına göre parçalar
+  // Koordinatlar: (x, y) 0-1 arası oran (görselin boyutuna göre ölçeklenir)
+  // Kullanıcının test ederek verdiği gerçek koordinatlar
+  // X: 0 = sol, 1 = sağ
+  // Y: 0 = üst, 1 = alt
+  frontBumper('Ön Tampon', 'B01201', 0.52, 0.03),
+  hood('Motor Kaputu', 'B01001', 0.53, 0.13),
+  frontLeftFender('Sol Ön Çamurluk', 'B01101', 0.35, 0.06),
+  frontLeftDoor('Sol Ön Kapı', 'B0801', 0.35, 0.17),
+  rearLeftDoor('Sol Arka Kapı', 'B0701', 0.37, 0.22),
+  rearLeftFender('Sol Arka Çamurluk', 'B0301', 0.35, 0.25),
+  frontRightFender('Sağ Ön Çamurluk', 'B0901', 0.66, 0.08),
+  frontRightDoor('Sağ Ön Kapı', 'B0501', 0.66, 0.18),
+  rearRightDoor('Sağ Arka Kapı', 'B0401', 0.65, 0.22),
+  rearRightFender('Sağ Arka Çamurluk', 'B0101', 0.65, 0.29),
+  trunk('Bagaj', 'B0201', 0.45, 0.28),
+  rearBumper('Arka Tampon', 'B01301', 0.45, 0.33),
+  roof('Tavan', 'B0601', 0.52, 0.21);
 
-  const CarPart(this.displayName, this.id);
+  const CarPart(this.displayName, this.id, this.x, this.y);
   
   final String displayName;
   final String id;
+  /// X koordinatı (0-1 arası oran)
+  final double x;
+  /// Y koordinatı (0-1 arası oran)
+  final double y;
+  
+  /// HTML kodundan CarPart'a dönüştür
+  static CarPart? fromCode(String code) {
+    try {
+      return CarPart.values.firstWhere((part) => part.id == code);
+    } catch (e) {
+      return null;
+    }
+  }
   
   /// Parçanın kategorisini döndürür
   CarPartCategory get category {
     switch (this) {
       case CarPart.frontBumper:
-      case CarPart.frontLeftLight:
-      case CarPart.frontRightLight:
+      case CarPart.hood:
         return CarPartCategory.front;
       case CarPart.rearBumper:
-      case CarPart.rearLeftLight:
-      case CarPart.rearRightLight:
+      case CarPart.trunk:
         return CarPartCategory.rear;
       case CarPart.frontLeftDoor:
       case CarPart.frontLeftFender:
@@ -61,17 +56,8 @@ enum CarPart {
       case CarPart.rearRightDoor:
       case CarPart.rearRightFender:
         return CarPartCategory.rightSide;
-      case CarPart.hood:
       case CarPart.roof:
-      case CarPart.trunk:
         return CarPartCategory.center;
-      case CarPart.frontWindshield:
-      case CarPart.rearWindshield:
-      case CarPart.frontLeftWindow:
-      case CarPart.frontRightWindow:
-      case CarPart.rearLeftWindow:
-      case CarPart.rearRightWindow:
-        return CarPartCategory.windows;
     }
   }
 }

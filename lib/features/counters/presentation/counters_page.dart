@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:otopark_demo/features/counters/providers/counter_providers.dart';
+import 'package:otopark_demo/features/counters/domain/counters.dart';
+import 'package:otopark_demo/features/vehicles/providers/vehicle_providers.dart';
+import 'package:otopark_demo/features/vehicles/domain/vehicle_status.dart';
 
 class CountersPage extends ConsumerWidget {
   const CountersPage({super.key});
@@ -13,103 +16,165 @@ class CountersPage extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Sayaçlar'),
         // Theme'den otomatik renk alır (sarı yazı, koyu gri arka plan)
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () {
+              // Sayaçları yenile (gerçek araç sayısına göre güncelle)
+              ref.invalidate(countersProvider);
+            },
+            tooltip: 'Sayaçları yenile',
+          ),
+        ],
       ),
       body: countersAsync.when(
         data: (counters) {
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                // Toplam sayaçlar
-                Text(
-                  'Toplam İşlemler',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                const SizedBox(height: 16),
-                Card(
-                  child: ListTile(
-                    leading: const Icon(Icons.local_parking_rounded, color: Colors.blue),
-                    title: const Text('Toplam Park Edilen Araç'),
-                    trailing: Text(
-                      '${counters.totalPark}',
-                      style: Theme.of(context).textTheme.headlineMedium,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Card(
-                  child: ListTile(
-                    leading: const Icon(Icons.build_circle_rounded, color: Colors.orange),
-                    title: const Text('Toplam Bakım İşlemi'),
-                    trailing: Text(
-                      '${counters.totalMaintenance}',
-                      style: Theme.of(context).textTheme.headlineMedium,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Card(
-                  child: ListTile(
-                    leading: const Icon(Icons.local_car_wash_rounded, color: Colors.lightBlue),
-                    title: const Text('Toplam Yıkama İşlemi'),
-                    trailing: Text(
-                      '${counters.totalWash}',
-                      style: Theme.of(context).textTheme.headlineMedium,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Card(
-                  child: ListTile(
-                    leading: const Icon(Icons.check_circle_rounded, color: Colors.green),
-                    title: const Text('Toplam Teslim Edilen'),
-                    trailing: Text(
-                      '${counters.totalDelivered}',
-                      style: Theme.of(context).textTheme.headlineMedium,
-                    ),
-                  ),
-                ),
-                
-                const SizedBox(height: 32),
-                const Divider(),
-                const SizedBox(height: 16),
-                
-                // Aktif sayaçlar
-                Text(
-                  'Şu An Aktif',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          // Negatif değerleri 0'a çek (güvenlik kontrolü)
+          final safeCounters = Counters(
+            totalPark: counters.totalPark < 0 ? 0 : counters.totalPark,
+            totalMaintenance: counters.totalMaintenance < 0 ? 0 : counters.totalMaintenance,
+            totalWash: counters.totalWash < 0 ? 0 : counters.totalWash,
+            totalDelivered: counters.totalDelivered < 0 ? 0 : counters.totalDelivered,
+            activePark: counters.activePark < 0 ? 0 : counters.activePark,
+            activeMaintenance: counters.activeMaintenance < 0 ? 0 : counters.activeMaintenance,
+            activeWash: counters.activeWash < 0 ? 0 : counters.activeWash,
+          );
+          
+          // Teslim edilen araçları al
+          final vehiclesAsync = ref.watch(vehiclesProvider);
+          
+          return vehiclesAsync.when(
+            data: (vehicles) {
+              final deliveredVehicles = vehicles
+                  .where((v) => v.status == VehicleStatus.delivered)
+                  .toList()
+                ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt)); // En yeni önce
+              
+              return SingleChildScrollView(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildActiveCounter(
-                      context,
-                      'Parkta',
-                      counters.activePark,
-                      Icons.local_parking,
-                      Colors.blue,
+                    // Aktif sayaçlar
+                    Text(
+                      'Şu An Aktif',
+                      style: Theme.of(context).textTheme.titleLarge,
                     ),
-                    _buildActiveCounter(
-                      context,
-                      'Bakımda',
-                      counters.activeMaintenance,
-                      Icons.build_circle,
-                      Colors.orange,
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        Expanded(
+                          child: _buildActiveCounter(
+                            context,
+                            'Parkta',
+                            safeCounters.activePark,
+                            Icons.local_parking,
+                            Colors.blue,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _buildActiveCounter(
+                            context,
+                            'Bakımda',
+                            safeCounters.activeMaintenance,
+                            Icons.build_circle,
+                            Colors.orange,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _buildActiveCounter(
+                            context,
+                            'Yıkamada',
+                            safeCounters.activeWash,
+                            Icons.local_car_wash,
+                            Colors.lightBlue,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _buildActiveCounter(
+                            context,
+                            'Teslim Edilenler',
+                            safeCounters.totalDelivered,
+                            Icons.check_circle,
+                            Colors.green,
+                          ),
+                        ),
+                      ],
                     ),
-                    _buildActiveCounter(
-                      context,
-                      'Yıkamada',
-                      counters.activeWash,
-                      Icons.local_car_wash,
-                      Colors.lightBlue,
-                    ),
+                    
+                    const SizedBox(height: 32),
+                    
+                    // Teslim edilen araçlar listesi
+                    if (deliveredVehicles.isNotEmpty) ...[
+                      Text(
+                        'Teslim Edilen Araçlar',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      const SizedBox(height: 16),
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: deliveredVehicles.length,
+                        itemBuilder: (context, index) {
+                          final vehicle = deliveredVehicles[index];
+                          return Card(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            child: ListTile(
+                              leading: CircleAvatar(
+                                backgroundColor: Colors.green.withOpacity(0.2),
+                                child: Icon(
+                                  Icons.check_circle,
+                                  color: Colors.green,
+                                ),
+                              ),
+                              title: Text(
+                                vehicle.plate,
+                                style: const TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              subtitle: Text(
+                                '${vehicle.brand ?? ''} ${vehicle.model ?? ''}'.trim().isEmpty
+                                    ? 'Marka/Model bilgisi yok'
+                                    : '${vehicle.brand ?? ''} ${vehicle.model ?? ''}'.trim(),
+                              ),
+                              trailing: Text(
+                                _formatDate(vehicle.updatedAt),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ] else ...[
+                      Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Center(
+                            child: Text(
+                              'Henüz teslim edilen araç yok',
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                    
+                    const SizedBox(height: 32),
                   ],
                 ),
-                
-                const SizedBox(height: 32),
-              ],
-            ),
+              );
+            },
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (err, stack) => Center(child: Text('Araçlar yüklenirken hata: $err')),
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -148,5 +213,23 @@ class CountersPage extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    final difference = now.difference(date);
+    
+    if (difference.inDays == 0) {
+      if (difference.inHours == 0) {
+        return '${difference.inMinutes} dk önce';
+      }
+      return '${difference.inHours} saat önce';
+    } else if (difference.inDays == 1) {
+      return 'Dün';
+    } else if (difference.inDays < 7) {
+      return '${difference.inDays} gün önce';
+    } else {
+      return '${date.day}/${date.month}/${date.year}';
+    }
   }
 }

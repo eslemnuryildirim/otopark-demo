@@ -17,7 +17,14 @@ class HiveCounterRepository implements CounterRepository {
 
   @override
   Future<Counters> getCounters() async {
-    return _counterBox.get(_counterKey)!;
+    final counters = _counterBox.get(_counterKey);
+    if (counters == null) {
+      // İlk açılışta sayaçları sıfırla
+      final newCounters = Counters();
+      await _counterBox.put(_counterKey, newCounters);
+      return newCounters;
+    }
+    return counters;
   }
 
   @override

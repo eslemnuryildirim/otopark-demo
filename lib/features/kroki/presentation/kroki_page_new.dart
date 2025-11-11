@@ -433,20 +433,20 @@ class _KrokiPageNewState extends ConsumerState<KrokiPageNew> {
       ),
     );
     
-    final isOccupied = slot.isOccupied;
-    final vehicle = isOccupied ? vehicles.firstWhere(
-      (v) => v.currentParkSlotId == slotId,
-      orElse: () => Vehicle(
-        id: 'unknown',
-        plate: 'Bilinmiyor',
-        brand: 'Bilinmiyor',
-        model: 'Bilinmiyor',
-        color: 'Bilinmiyor',
-        status: VehicleStatus.parked,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      ),
-    ) : null;
+    // ÖNEMLİ: isOccupied yerine doğrudan araçların currentParkSlotId'sine göre kontrol et
+    // Çünkü slot.isOccupied güncellenmemiş olabilir
+    final parkedVehicles = vehicles.where(
+      (v) => v.currentParkSlotId == slotId && v.status == VehicleStatus.parked,
+    ).toList();
+    
+    // Debug: Eğer slot dolu görünüyor ama araç bulunamıyorsa logla
+    if (slot.isOccupied && parkedVehicles.isEmpty) {
+      final allVehiclesInSlot = vehicles.where((v) => v.currentParkSlotId == slotId).toList();
+      print('⚠️ Slot $slotId: slot.isOccupied=true ama parked vehicle bulunamadı. Tüm araçlar: ${allVehiclesInSlot.map((v) => '${v.plate} (${v.status.displayName})').join(', ')}');
+    }
+    
+    final isOccupied = parkedVehicles.isNotEmpty;
+    final vehicle = isOccupied ? parkedVehicles.first : null;
     
     // Eski kroki renkleri
     Color backgroundColor;

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:otopark_demo/features/vehicles/presentation/vehicles_provider.dart';
+import 'package:otopark_demo/features/vehicles/providers/vehicle_providers.dart';
 import 'package:otopark_demo/features/vehicles/domain/vehicle.dart';
 import 'package:otopark_demo/features/vehicles/domain/vehicle_status.dart';
 import 'car_selection_view.dart';
